@@ -1,21 +1,188 @@
-## 1.8.4 (Upcoming)
+## 1.8.6 (Upcoming)
+
+### IMPROVEMENTS:
+* bump github.com/hashicorp/hcp-sdk-go from 0.28.0 to 0.29.0.
+     [GH-12163](https://github.com/hashicorp/packer/pull/12163)
+* hcp: iteration fingerprints used to be computed from the Git SHA of the repository
+       where the template is located when running packer build. This changes with this
+       release, and now fingerprints are automatically generated as a ULID. This implies
+       that continuing an existing iteration will require users to define the
+       fingerprint in the environment manually in order to adopt this behaviour,
+       otherwise, by default, a new iteration will be created. This does not impact
+       workflows where the fingerprint was defined through the
+       HCP_PACKER_ITERATION_FINGERPRINT environment variable, and these builds will work
+       exactly as they did before.
+
+### BUG FIXES: 
+* core/hcl2: Templates with build blocks referencing an unknown source block
+     would display an empty string for the template filename at line 0, which made
+     it difficult to identify the broken build block. Packer has been updated to
+     display the proper filename and line number where the unknown reference
+     resides. [GH-12167](https://github.com/hashicorp/packer/pull/12167)
+
+### NOTES:
+* core: Users will see some changes in how names are displayed during a Packer
+     build for JSON templates. Previously only the builder type or the builder
+     name, if it was set, would be displayed. Now for named builders
+     (`"name":"mybuilder"`) the builder'ss type and name will be displayed (i.e
+     "<type>.mybuilder". This does not impact the behavior of options such as
+     only or except, they will continue to work as they did before.)
+
+## 1.8.5 (December 12, 2022)
+
+### NOTES:
+* data/packer-image-iteration has been removed. This was an undocumented and
+     unusable data source that was built for experimentation but not released. It
+     should not affect users in any way but is being mentioned for visibility
+     purposes.
+     [GH-12111](https://github.com/hashicorp/packer/pull/12111)
+
+### FEATURES:
+* core: Metadata for capturing template types such as JSON or HCL2 has been added to the
+     HCP Packer registry metadata. Upon running a `packer build` the type of
+     template used during execution will be sent along to the registry as
+     additional build metadata.[GH-12132](https://github.com/hashicorp/packer/pull/12132)
+
+### PLUGINS:
+The following external plugins have been updated and pinned to address open
+    issues. Please see their respective changelogs for details on plugin
+    specific bug fixes and improvements.
+
+* alicloud@v1.0.5 - [CHANGELOG](https://github.com/hashicorp/packer-plugin-alicloud/releases/tag/v1.0.5)
+* amazon@v1.1.6 - [CHANGELOG](https://github.com/hashicorp/packer-plugin-amazon/releases/tag/v1.1.6)
+* proxmox@v1.1.0 - [CHANGELOG](https://github.com/hashicorp/packer-plugin-proxmox/releases/tag/v1.1.0)
+* vsphere@v1.1.1 - [CHANGELOG](https://github.com/hashicorp/packer-plugin-vsphere/releases/tag/v1.1.1)
+* qemu@v1.0.8 - [CHANGELOG](https://github.com/hashicorp/packer-plugin-qemu/releases/tag/v1.0.8)
+
+### IMPROVEMENTS:
+* cmd/hcl2_upgrade: Generate variable block for all referenced user input
+     variables. [GH-12136](https://github.com/hashicorp/packer/pull/12136)
+* cmd/validate: Add support for the `-evaluate-datasources` flag to evaluate
+     the data sources from a template during validation time.
+     [GH-12106](https://github.com/hashicorp/packer/pull/12106)
+     [GH-12152](https://github.com/hashicorp/packer/pull/12152)
+* core/hcl2: Variable definition files containing undeclared variables within
+     an HCL2 template will no longer warn during build execution. Warnings will
+     be displayed to a user during template validation, which can be disabled by
+     passing the `-no-warn-undeclared-var` flag to the validate command.
+     [GH-12104](https://github.com/hashicorp/packer/pull/12104)
+     [GH-12109](https://github.com/hashicorp/packer/pull/12109)
+* core: Docker images have been updated to include the `xorriso` package for
+     supporting the creation of ISO files.[GH-12081](https://github.com/hashicorp/packer/pull/12081)
+* core: Split HCP Packer publishing components into a separate internal-only
+     module. [GH-11](https://github.com/hashicorp/packer/pull/11967)
+     [GH-12116](https://github.com/hashicorp/packer/pull/12116)
+
+### BUG FIXES:
+* cmd/init: The init command will try to fallback to the next available version
+     for a plugin, if the most recent version is not available or has a missing
+     checksum file. This should prevent Packer from trying to install versions
+     that have a GitHub tag but no actual assets.
+     [GH-12103](https://github.com/hashicorp/packer/pull/12103)
+* cmd/plugins: The `plugins install` sub-command will try to fallback to the
+     next available version for a plugin, if the most recent version is not
+     available or has a missing checksum file. This should prevent Packer from
+     trying to install versions that have a GitHub tag but no actual assets.
+     [GH-12103](https://github.com/hashicorp/packer/pull/12103)
+* core: Bump Go version to 1.18.9 to address vulnerability GO-2022-1144, which
+     concerns the net/http and golang.org/x/net
+     packages.[GH-12153](https://github.com/hashicorp/packer/pull/12153)
+     [GH-12158](https://github.com/hashicorp/packer/pull/12158)
+* core: Fix the registration of deleted input artifacts in HCP Packer when
+     setting `keep_input_artifacts` to
+     false.[GH-11462](https://github.com/hashicorp/packer/pull/11967)
+* core: Using different template types when building a HCP Packer
+     image iteration will now trigger a runtime build error due to the 
+     mixing of template types.
+     [GH-12132](https://github.com/hashicorp/packer/pull/12132)
+
+## 1.8.4 (October 28 2022)
+
+### NOTES:
+
+* Packer user documentation has been moved to the new HashiCorp developer
+     documentation portal. The main Packer site (https://www.packer.io) will
+     continue to be the home for Packer but all requests for general
+     documentation and binary downloads will be redirected to
+     https://developer.hashicorp.com/packer. Users are encouraged to visit the
+     developer documentation portal for access to all Packer related
+     documentation; including integrations with HCP Packer.
+
+* The Oracle builder and post-processor are no longer vendored with Packer
+     core. Users of the Oracle plugin should use `packer init` to install the
+     latest version of the plugin. See the [Oracle Plugin
+     Documentation](https://github.com/hashicorp/packer-plugin-oracle) for more
+     information. [GH-11983](https://github.com/hashicorp/packer/pull/11983)
+
+* HCP Packer environment variables: The behavior of some HCP Packer-specific
+     environment variables have changed slightly. Refer to [HCP Packer](https://developer.hashicorp.com/packer/docs/hcp)
+     in the Packer documentation for a full list of HCP Packer environment variables. [GH-12059](https://github.com/hashicorp/packer/pull/12059)
+    - For JSON templates, the `HCP_PACKER_REGISTRY` environment variable was
+     previously required to enable the HCP Packer integration. In this release,
+     the environment variable is now optional, and can be used for disabling the
+     publishing of metadata for any HCP Packer enabled configuration template.
+    - For HCL2 templates, the `HCP_PACKER_REGISTRY` environment variable can be used
+     to disable publishing to a HCP Packer registry even if the template defines a
+     `hcp_packer_registry` block. This can be useful for testing that a template
+     works as intended prior to pushing metadata to HCP Packer.
+    - The `HCP_PACKER_BUCKET_NAME` environment variable is now the only
+     requirement to push metadata to a HCP Packer registry, in both JSON 
+     and HCL2 templates without a `hcp_packer_registry` block.
+
+### FEATURES:
+
+* provisioner/powershell: Add `use_pwsh` configuration argument to support pwsh
+     in powershell provisioner. [GH-11950](https://github.com/hashicorp/packer/pull/11950)
+
+### PLUGINS:
+
+* builder/oracle: Remove Oracle plugin from the list of vendored
+     plugins. [GH-11983](https://github.com/hashicorp/packer/pull/11983)
 
 ### IMPROVEMENTS:
 
-* Bump Go to 1.18 [GH-11927](https://github.com/hashicorp/packer/pull/11927)
+* command/hcl2_upgrade: Has been updated to persist all possible template
+     engine options that were supported by the legacy JSON templates. While the
+     upgrade command copies the template engine options as is support for the
+     template options may not actually work with HCL2 templates; indicated by an
+     error similar to `fieldname type <no value> is invalid`. Before executing a
+     build with the upgraded template you are encouraged to run `packer validate`
+     against the template and fix any invalid `<no value>` references.
+     [GH-12068](https://github.com/hashicorp/packer/pull/12068)
+* core/hcl2: Packer will now report an error when executing a build with no
+     sources selected for execution.
+     [GH-12016](https://github.com/hashicorp/packer/pull/12016)
+* core/hcp: Configuration errors for HCP Packer enabled builds have been
+     consolidated into a single report to help users address all potential
+     issues before retrying their build.
+     [GH-12031](https://github.com/hashicorp/packer/pull/12031)
+* core/hcp: Named builds within a legacy JSON template are now published to a
+     HCP Packer registry using its full build name (e.g `happycloud.windows-srv-2019)`, 
+     as opposed to just the build name field (e.g `"name"="windows-srv-2019"`). 
+     Builders with no defined name will continue to publish build
+     metadate using the builder type as the build name (e.g `happycloud`).
+     [GH-12059](https://github.com/hashicorp/packer/pull/12059)
+* core:hcl2: When a variable is set in a variables definitions file (i.e
+     \*.pkrvars.hcl), but isn't defined with the template files (i.e
+     \*.pkr.hcl), the outputted error message will now include an example of
+     variable block that can be added to the build template to remedy the issue.
+     [GH-12020](https://github.com/hashicorp/packer/pull/12020)
+* core: Add ppc64le to binary releases for Linux.
+     [GH-11966](https://github.com/hashicorp/packer/pull/11966)
+* core: Bump github.com/hashicorp/packer-plugin-sdk from 0.3.1 to 0.3.2.
+     [GH-11981](https://github.com/hashicorp/packer/pull/11981)
+* core: Bump supported Go version to 1.18.
+     [GH-11927](https://github.com/hashicorp/packer/pull/11927)
 
 ### BUG FIXES:
-
-### NOTES:
-* **Supported Architectures**: In Packer 1.8.0 support for the following
-     architectures `ppc64le, mips, mips64, mipsle, mipsle64, s390x` were removed
-     from the Packer releases page. Packer, along with the HashiCorp maintained
-     Packer plugins, were updated to release binaries for the HashiCorp
-     supported architectures arm, arm64, 386, and amd64. A full list of
-     supported platforms can be found on the [Packer Downloads](https://www.packer.io/downloads) page.
-    [GH-11564](https://github.com/hashicorp/packer/pull/11564)
-    [GH-11601](https://github.com/hashicorp/packer/pull/11601)
-    [GH-11603](https://github.com/hashicorp/packer/pull/11603)
+* command/hcl2_upgrade: special case: Azure `shared_image_gallery` fix.
+     [GH-12087](https://github.com/hashicorp/packer/pull/12087)
+* core: Bump golang.org/x/sys to address CVE-2022-29526.
+     [GH-11953](https://github.com/hashicorp/packer/pull/11953)
+* core: Bump golang.org/x/text to v0.3.8.
+     [GH-12047](https://github.com/hashicorp/packer/pull/12047)
+* core: Update dependency to resolve GO-2022-0969.
+     [GH-12009](https://github.com/hashicorp/packer/pull/12009)
 
 ## 1.8.3 (August 2, 2022)
 
@@ -95,7 +262,7 @@ The following external plugins have been updated and pinned to address open
     using several images from a single iteration, you may prefer sourcing an
     iteration first, and referencing it for subsequent uses, as every
     `hcp_packer_image` with the channel set will generate a potentially
-    billable HCP Packer request, but if several `hcp_packer_image`s use a
+    billable HCP Packer request but if several `hcp_packer_image`s use a
     shared `hcp_packer_iteration` that will only generate one potentially
     billable request.
     [GH-11865](https://github.com/hashicorp/packer/pull/11865)
@@ -330,7 +497,7 @@ External plugins have been pinned to the following versions. Please see their
     scheduled revocations.
     [GH-11619](https://github.com/hashicorp/packer/pull/11619)
 * core: Packer darwin builds now use macOS system DNS resolver for resolving
-    hostnames.[GH-9710](https://github.com/hashicorp/packer/issues/9710)
+    hostnames. [GH-9710](https://github.com/hashicorp/packer/issues/9710)
     [GH-11564](https://github.com/hashicorp/packer/pull/11564)
 
 ## 1.7.10 (February 02, 2022)
@@ -446,7 +613,7 @@ External plugins have been pinned to the following versions. Please see
     [GH-11455](https://github.com/hashicorp/packer/pull/11455)
 * core: Bump github.com/hashicorp/packer-plugin-sdk from 0.2.9 to 0.2.11 to
     prevent HCP Packer builds from failing when no SourceImageID is
-    provided.[GH-11459](https://github.com/hashicorp/packer/pull/11459)
+    provided. [GH-11459](https://github.com/hashicorp/packer/pull/11459)
 * core: Bump to latest preview version of hashicorp/hcp-sdk-go to prevent HCP
     Packer builds from trying to update a revoked iteration.
     [GH-11492](https://github.com/hashicorp/packer/pull/11492)
@@ -2714,7 +2881,7 @@ making changes for HCL2.
 * core: When using `-on-error=[abort|ask]`, output the error to the user.
     [GH-6252]
 * provisioner/puppet: Extra-Arguments are no longer prematurely
-    interpolated.[GH-6215]
+    interpolated. [GH-6215]
 * provisioner/shell: Remove file stat that was causing problems uploading files
     [GH-6239]
 
@@ -2884,7 +3051,7 @@ making changes for HCL2.
     builder with the OpenStack Newton (Oct 2016) or earlier, we recommend you
     use Packer v1.1.2 or earlier version.
 * core: Affects Windows guests: User variables containing Powershell special
-    characters no longer need to be escaped.[GH-5376]
+    characters no longer need to be escaped. [GH-5376]
 * provisioner/file: We've made destination semantics more consistent across the
     various communicators. In general, if the destination is a directory, files
     will be uploaded into the directory instead of failing. This mirrors the

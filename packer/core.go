@@ -14,11 +14,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	multierror "github.com/hashicorp/go-multierror"
 	version "github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl/v2"
+	hcl "github.com/hashicorp/hcl/v2"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
-	packerregistry "github.com/hashicorp/packer/internal/registry"
+	plugingetter "github.com/hashicorp/packer/packer/plugin-getter"
 	packerversion "github.com/hashicorp/packer/version"
 )
 
@@ -26,8 +26,6 @@ import (
 // library, this is the struct you'll want to instantiate to get anything done.
 type Core struct {
 	Template *template.Template
-
-	Bucket *packerregistry.Bucket
 
 	components ComponentFinder
 	variables  map[string]string
@@ -131,7 +129,20 @@ func NewCore(c *CoreConfig) *Core {
 	return core
 }
 
-func (core *Core) Initialize() error {
+func (c *Core) Initialize(_ InitializeOptions) hcl.Diagnostics {
+	err := c.initialize()
+	if err != nil {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Detail:   err.Error(),
+				Severity: hcl.DiagError,
+			},
+		}
+	}
+	return nil
+}
+
+func (core *Core) initialize() error {
 	if err := core.validate(); err != nil {
 		return err
 	}
@@ -155,7 +166,18 @@ func (core *Core) Initialize() error {
 
 		core.builds[v] = b
 	}
+
 	return nil
+}
+
+func (c *Core) PluginRequirements() (plugingetter.Requirements, hcl.Diagnostics) {
+	return nil, hcl.Diagnostics{
+		&hcl.Diagnostic{
+			Summary:  "Packer plugins currently only works with HCL2 configuration templates",
+			Detail:   "Please manually install plugins with the plugins command or use a HCL2 configuration that will do that for you.",
+			Severity: hcl.DiagError,
+		},
+	}
 }
 
 // BuildNames returns the builds that are available in this configured core.
@@ -377,14 +399,6 @@ func (c *Core) Build(n string) (packersdk.Build, error) {
 					"post-processor type not found: %s", rawP.Type)
 			}
 
-			if c.Bucket != nil {
-				postProcessor = &RegistryPostProcessor{
-					BuilderType:               n,
-					ArtifactMetadataPublisher: c.Bucket,
-					PostProcessor:             postProcessor,
-				}
-			}
-
 			current = append(current, CoreBuildPostProcessor{
 				PostProcessor:     postProcessor,
 				PType:             rawP.Type,
@@ -401,31 +415,13 @@ func (c *Core) Build(n string) (packersdk.Build, error) {
 
 		postProcessors = append(postProcessors, current)
 	}
-	if c.Bucket != nil {
-		postProcessors = append(postProcessors, []CoreBuildPostProcessor{
-			{
-				PostProcessor: &RegistryPostProcessor{
-					BuilderType:               n,
-					ArtifactMetadataPublisher: c.Bucket,
-				},
-			},
-		})
-	}
 
 	// TODO hooks one day
 
-	if c.Bucket != nil {
-		builder = &RegistryBuilder{
-			Name:                      n,
-			ArtifactMetadataPublisher: c.Bucket,
-			Builder:                   builder,
-		}
-	}
-
 	// Return a structure that contains the plugins, their types, variables, and
 	// the raw builder config loaded from the json template
-	return &CoreBuild{
-		Type:               n,
+	cb := &CoreBuild{
+		Type:               configBuilder.Name,
 		Builder:            builder,
 		BuilderConfig:      configBuilder.Config,
 		BuilderType:        configBuilder.Type,
@@ -434,7 +430,13 @@ func (c *Core) Build(n string) (packersdk.Build, error) {
 		CleanupProvisioner: cleanupProvisioner,
 		TemplatePath:       c.Template.Path,
 		Variables:          c.variables,
-	}, nil
+	}
+
+	if configBuilder.Type != configBuilder.Name {
+		cb.BuildName = configBuilder.Type
+	}
+
+	return cb, nil
 }
 
 // Context returns an interpolation context.
@@ -893,10 +895,4 @@ func (c *Core) init() error {
 	}
 
 	return nil
-}
-
-/// GetRegistryBucket returns a configured bucket that can be used for
-// publishing build image artifacts to some HCP Packer Registry.
-func (c *Core) GetRegistryBucket() *packerregistry.Bucket {
-	return c.Bucket
 }

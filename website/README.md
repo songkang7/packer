@@ -49,7 +49,7 @@ The Docker image is pre-built with all the website dependencies installed, which
 
 ### With Node
 
-If your local development environment has a supported version (v10.0.0+) of [node installed](https://nodejs.org/en/) you can run:
+If your local development environment has a supported version (v16+) of [node installed](https://nodejs.org/en/) you can run:
 
 - `npm install`
 - `npm start`
@@ -78,7 +78,6 @@ This file can be standard Markdown and also supports [YAML frontmatter](https://
 title: 'My Title'
 description: "A thorough, yet succinct description of the page's contents"
 ---
-
 ```
 
 The significant keys in the YAML frontmatter are:
@@ -127,7 +126,7 @@ The `Tabs` component creates tabbed content of any type, but is often used for c
 
 ![Tabs Component](https://p176.p0.n0.cdn.getcloudapp.com/items/WnubALZ4/Screen%20Recording%202020-06-11%20at%2006.03%20PM.gif?v=1de81ea720a8cc8ade83ca64fb0b9edd)
 
-> Please refer to the [Swingset](https://react-components.vercel.app/?component=Tabs) documention for the latest examples and API reference.
+> Please refer to the [Swingset](https://react-components.vercel.app/?component=Tabs) documentation for the latest examples and API reference.
 
 It can be used as such within a markdown file:
 
@@ -151,7 +150,7 @@ $ curl ...
 </Tab>
 </Tabs>
 
-Contined normal markdown content
+Continued normal markdown content
 ````
 
 The intentionally skipped line is a limitation of the mdx parser which is being actively worked on. All tabs must have a heading, and there is no limit to the number of tabs, though it is recommended to go for a maximum of three or four.
@@ -452,7 +451,7 @@ This configuration would display something like the following text on the websit
 A {{ release candidate }} for <Product> {{ v1.0.0 }} is available! The release can be <a href='https://releases.hashicorp.com/<product>/{{ 1.0.0-rc1 }}'>downloaded here</a>.
 ```
 
-You may customize the parameters in any way you'd like. To remove a prerelease from the website, simply delete the `prerelease` paremeter from the above component.
+You may customize the parameters in any way you'd like. To remove a prerelease from the website, simply delete the `prerelease` parameter from the above component.
 
 <!-- END: releases -->
 

@@ -16,7 +16,7 @@ be overridden from the command line or special variable files. Local variables
 can be thought of as constants, and are not able to be overridden at runtime.
 
 This page is about input variables. To learn about local variables, see the
-[locals](/docs/templates/hcl_templates/locals) page.
+[locals](/packer/docs/templates/hcl_templates/locals) page.
 
 Input variables serve as parameters for a Packer build, allowing aspects of the
 build to be customized without altering the build's own source code.
@@ -25,14 +25,14 @@ When you declare variables in the build of your configuration, you can set
 their values using CLI options and environment variables.
 
 Input variable and local variable usage are introduced in the [_Variables
-Guide_](/guides/hcl/variables).
+Guide_](/packer/guides/hcl/variables).
 
 -> **Note:** For brevity, input variables are often referred to as just
 "variables" or "Packer variables" when it is clear from context what sort of
 variable is being discussed. Other kinds of variables in Packer include
 _environment variables_ (set by the shell where Packer runs) and _expression
 variables_ (used to indirectly represent a value in an
-[expression](/docs/templates/hcl_templates/expressions)).
+[expression](/packer/docs/templates/hcl_templates/expressions)).
 
 ## Declaring an Input Variable
 
@@ -79,36 +79,35 @@ name for the variable, which must be unique among all variables in the same
 build. This name is used to assign a value to the variable from outside and to
 reference the variable's value from within the build.
 
-The `variable` block can optionally include a `type` argument to specify what
-value types are accepted for the variable, as described in the following
-section.
 
-The `variable` declaration can also include a `default` argument. If present,
+## Arguments
+
+Packer defines the following arguments for variable declarations:
+
+* [`default`][inpage-default] - A default value which then makes the variable optional.
+* [`type`][inpage-type] - This argument specifies what value types are accepted for the variable.
+* [`description`][inpage-description] - This specifies the input variable's documentation.
+* [`validation`][inpage-validation] - A block to define validation rules, usually in addition to type constraints.
+* [`sensitive`][inpage-sensitive] -  This causes string-values from that variable to be obfuscated from Packer's output.
+
+
+
+### Default values
+
+[inpage-default]: #default-values
+
+The variable declaration can also include a `default` argument. If present,
 the variable is considered to be _optional_ and the default value will be used
-if no value is set when calling the build or running Packer. The `default`
+if no value is set when running Packer. The `default`
 argument requires a literal value and cannot reference other objects in the
 configuration.
 
-## Using Input Variable Values
 
-Within the build that declared a variable, its value can be accessed from
-within [expressions](/docs/templates/hcl_templates/expressions) as `var.<NAME>`, where `<NAME>`
-matches the label given in the declaration block:
-
-```hcl
-source "googlecompute" "debian"  {
-    zone = var.gcp_zone
-    tags = var.gcp_debian_tags
-}
-```
-
-The value assigned to a variable can be accessed only from expressions within
-the folder where it was declared.
-
-## Type Constraints
+### Type Constraints
+[inpage-type]: #type-constraints
 
 The `type` argument in a `variable` block allows you to restrict the [type of
-value](/docs/templates/hcl_templates/expressions#types-and-values) that will be accepted as the value
+value](/packer/docs/templates/hcl_templates/expressions#types-and-values) that will be accepted as the value
 for a variable. If no type constraint is set then a value of any type is
 accepted.
 
@@ -134,7 +133,7 @@ The type constructors allow you to specify complex types such as collections:
 The keyword `any` may be used to indicate that any type is acceptable. For more
 information on the meaning and behavior of these different types, as well as
 detailed information about automatic conversion of complex types, see [Type
-Constraints](https://www.terraform.io/docs/configuration/types.html).
+Constraints](/terraform/docs/configuration/types).
 
 If both the `type` and `default` arguments are specified, the given default
 value must be convertible to the specified type.
@@ -146,7 +145,9 @@ variable [from env vars](#environment-variables) or [from the command
 line](#variables-on-the-command-line), the variable will always be interpreted
 as a string.
 
-## Input Variable Documentation
+### Input Variable Documentation
+
+[inpage-description]: #input-variable-documentation
 
 Because the input variables of a build are part of its user interface, you can
 briefly describe the purpose of each variable using the optional `description`
@@ -165,11 +166,31 @@ documentation about the build, and so it should be written from the perspective
 of the user of the build rather than its maintainer. For commentary for build
 maintainers, use comments.
 
+`@include 'from-1.5/variables/custom-validation.mdx'`
+
+`@include 'from-1.5/variables/sensitive.mdx'`
+
+
+## Using Input Variable Values
+
+Within the build that declared a variable, its value can be accessed from
+within [expressions](/packer/docs/templates/hcl_templates/expressions) as `var.<NAME>`, where `<NAME>`
+matches the label given in the declaration block:
+
+```hcl
+source "googlecompute" "debian"  {
+    zone = var.gcp_zone
+    tags = var.gcp_debian_tags
+}
+```
+
+The value assigned to a variable can be accessed only from expressions within
+the folder where it was declared.
+
+
 `@include 'from-1.5/variables/assignment.mdx'`
 
 The following sections describe these options in more detail.
-
-`@include 'from-1.5/variables/custom-validation.mdx'`
 
 ### Variables on the Command Line
 
@@ -189,11 +210,11 @@ you at least set a default type instead of using empty blocks; this helps the
 HCL parser understand what is being set. Otherwise, the interpreter will assume
 that any variable set on the command line is a string.
 
-### Variable Definitions (`.pkrvars.hcl` and `.auto.pkrvars.hcl`) Files
+### Standard Variable Definitions Files
 
 To set lots of variables, it is more convenient to specify their values in a
-_variable definitions file_ (with a filename ending in either `.pkrvars.hcl` or
-`.pkrvars.json`) and then specify that file on the command line with
+_variable definitions file_ with a filename ending in either `.pkrvars.hcl` or
+`.pkrvars.json` and then specify that file on the command line with
 `-var-file`:
 
 ```shell-session
@@ -201,7 +222,7 @@ $ packer build -var-file="testing.pkrvars.hcl"
 ```
 
 A variable definitions file uses the same basic syntax as Packer language
-files, but consists only of variable name assignments:
+files, but consists only of variable name and its assigned values:
 
 ```hcl
 image_id = "ami-abc123"
@@ -211,7 +232,13 @@ availability_zone_names = [
 ]
 ```
 
-Packer also automatically loads a number of variable definitions files if they
+~> **Important**: Unlike legacy JSON templates the input variables within a variable definitions file must be declared 
+via a variables block within a standard HCL2 template file `*.pkr.hcl` before it can be assigned a value. 
+Failure to do so will result in an unknown variable error during Packer's runtime.
+
+### Auto-loaded Variable Definitions Files
+
+Packer also has the ability automatically load one or more variable definitions files if they
 are present:
 
 - Any files with names ending in `.auto.pkrvars.hcl` or `.auto.pkrvars.json`.
@@ -225,6 +252,11 @@ with the root object properties corresponding to variable names:
   "availability_zone_names": ["us-west-1a", "us-west-1c"]
 }
 ```
+
+~> **Important**: Unlike legacy JSON templates the input variables within a variable definitions file must be declared 
+via a variables block within a standard HCL2 template file `*.pkr.hcl` before it can be assigned a value. 
+Failure to do so will result in an unknown variable error during Packer's runtime.
+
 
 ### Environment Variables
 
@@ -250,7 +282,7 @@ case letters as in the above example.
 ### Complex-typed Values
 
 When variable values are provided in a variable definitions file, Packer's
-[usual syntax](/docs/templates/hcl_templates/expressions) can be used to assign
+[usual syntax](/packer/docs/templates/hcl_templates/expressions) can be used to assign
 complex-typed values, like lists and maps.
 
 Some special rules apply to the `-var` command line option and to environment
@@ -307,4 +339,3 @@ other variables: the last value found overrides the previous values.
 |     `-var bar=yz` argument     | error, "bar undeclared" |  error, "bar undeclared"  |
 |    `export PKR_VAR_bar=yz`     |            -            |             -             |
 
-`@include 'from-1.5/variables/sensitive.mdx'`

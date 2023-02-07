@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/packer/builder/null"
 	dnull "github.com/hashicorp/packer/datasource/null"
 	. "github.com/hashicorp/packer/hcl2template/internal"
-	packerregistry "github.com/hashicorp/packer/internal/registry"
+	hcl2template "github.com/hashicorp/packer/hcl2template/internal"
 	"github.com/hashicorp/packer/packer"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -356,22 +356,15 @@ var cmpOpts = []cmp.Option{
 		packer.CoreBuildProvisioner{},
 		packer.CoreBuildPostProcessor{},
 		null.Builder{},
-		packerregistry.Bucket{},
-		packerregistry.Iteration{},
-		packer.RegistryBuilder{},
 	),
 	cmpopts.IgnoreFields(PackerConfig{},
-		"Cwd", // Cwd will change for every os type
-	),
-	cmpopts.IgnoreFields(packerregistry.Iteration{},
-		"Fingerprint", // Fingerprint will change everytime
-	),
-	cmpopts.IgnoreFields(packerregistry.Bucket{},
-		"SourceImagesToParentIterations", // Requires execution of datasource at this time
+		"Cwd",     // Cwd will change for every os type
+		"HCPVars", // HCPVars will not be filled-in during parsing
 	),
 	cmpopts.IgnoreFields(VariableAssignment{},
 		"Expr", // its an interface
 	),
+	cmpopts.IgnoreTypes(hcl2template.MockBuilder{}),
 	cmpopts.IgnoreTypes(HCL2Ref{}),
 	cmpopts.IgnoreTypes([]*LocalBlock{}),
 	cmpopts.IgnoreTypes([]hcl.Range{}),
